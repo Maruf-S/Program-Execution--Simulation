@@ -26,159 +26,147 @@ class Cpu {
 
   class Memory2 {
     constructor() {
-      this.adress5 = document.querySelector("#adress5");
-      this.adress6 = document.querySelector("#adress6");
-      this.adress7 = document.querySelector("#adress7");
+      this.adressL1 = document.querySelector("#adressL1");
+      this.adressL2 = document.querySelector("#adressL2");
+      this.adressL3 = document.querySelector("#adressL3");
 
-      this.memory5 = document.querySelector("#memory5");
-      this.memory6 = document.querySelector("#memory6");
-      this.memory7 = document.querySelector("#memory7");
+      this.memoryL1 = document.querySelector("#memoryL1");
+      this.memoryL2 = document.querySelector("#memoryL2");
+      this.memoryL3 = document.querySelector("#memoryL3");
     }
 }
+
 var cpu;
 var memory;
 var memory2;
 
-async function simulate() {
-    if(!firstTime){
-        location.reload();
-    }
-    firstTime  = false;
+async function simulate2(){
+    loadMapanew();
     cpu = new Cpu();
     memory = new Memory();
     memory2 = new Memory2();
-    var s1x = $(cpu.instruction3).offset().left - $(memory.memory1).offset().left;
-    var s1y = $(cpu.instruction3).offset().top - $(memory.memory1).offset().top;
-   var step1 =  await anime({
-        targets:'#memory1',
-        translateX:s1x ,
-        translateY: s1y,
-        duration: 1500,
-        easing: 'easeInOutQuad',
-        complete: function() {
-            cpu.instruction3.value = 1940;
+    var fistIteration = true;
+    for (const [key, value] of memoryMap)
+    {
+        var _IRCell = cpu.instruction3;
+        var _ACCell = cpu.instruction2;
+        var _PCCell = cpu.instruction1;
+        console.log("Current key is: ", key);
+        if(key != _PCCell.value && fistIteration)continue;
+        //Reset
+        fistIteration = false;
+        var activeMCell = value.memory;
+        var activeMCellAddress = value.address;
+        console.log("ActiveMCellValue:",activeMCell.value);
+        var offsetX = $(_IRCell).offset().left - $(activeMCell).offset().left;
+        var offsetY = $(_IRCell).offset().top - $(activeMCell).offset().top;
+        _PCCell.value = activeMCellAddress.value;
+        await anime({
+            targets:activeMCell,
+            translateX:offsetX ,
+            translateY: offsetY,
+            duration: 1500,
+            loop: 1,
+            direction: 'alternate',
+            // easing: 'easeInOutQuad',
+            easing: 'easeInOutCirc',
+            update:function(anim){
+                if(Math.round(anim.progress)=== 100){
+                    // console.log("HALF TIME");
+                    _IRCell.value = activeMCell.value;
+                }
+                // console.log('progress : ' + Math.round(anim.progress) + '%');
+            },
+            begin: function(anim) {
+                console.log('began : ' + anim.began);
+              },
+            complete: function(anim) {
+                console.log('completed : ' + anim.completed);
+              }
+            
+        })
+        .finished;
+        switch(parseInt(_IRCell.value[0])) {
+            case 1:
+            //Load AC to memory
+            
+            var activeAddressTBL = _IRCell.value.substring(1);
+            console.log("activeAddressTBL:: ",activeAddressTBL)
+
+            var memoryTBL = getMemory2ByAddress(activeAddressTBL).memory;
+
+            var offsetX = $(_ACCell).offset().left - $(memoryTBL).offset().left;
+            var offsetY = $(_ACCell).offset().top - $(memoryTBL).offset().top;
+           await anime({
+                targets:memoryTBL,
+                translateX:offsetX ,
+                translateY: offsetY,
+                duration: 1500,
+                loop: 1,
+                direction: 'alternate',
+                easing: 'easeInOutCirc',
+                update:function(anim){
+                    if(Math.round(anim.progress)=== 100){
+                        // console.log("HALF TIME");
+                        _ACCell.value = memoryTBL.value;;
+                    }
+                }
+            }).finished;          
+              break;
+            case 2:
+            //Store AC to memory
+            var activeAddressTBL = _IRCell.value.substring(1);
+            console.log("activeAddressTBL:: ",activeAddressTBL)
+            var memoryTBL = getMemory2ByAddress(activeAddressTBL).memory;
+
+            var offsetX = $(_ACCell).offset().left - $(memoryTBL).offset().left;
+            var offsetY = $(_ACCell).offset().top - $(memoryTBL).offset().top;
+           await anime({
+                targets:_ACCell,
+                translateX: - offsetX ,
+                translateY: - offsetY,
+                duration: 1500,
+                loop: 1,
+                direction: 'alternate',
+                easing: 'easeInOutCirc',
+                update:function(anim){
+                    if(Math.round(anim.progress)=== 100){
+                        // console.log("HALF TIME");
+                         memoryTBL.value = _ACCell.value;
+                    }
+                }
+            }).finished;
+              break;
+            case 5:
+            //Add to AC from memory
+            var addedOnceAlready = false;
+            var activeAddressTBL = _IRCell.value.substring(1);
+            console.log("activeAddressTBL:: ",activeAddressTBL)
+            var memoryTBL = getMemory2ByAddress(activeAddressTBL).memory;
+            
+            var offsetX = $(_ACCell).offset().left - $(memoryTBL).offset().left;
+            var offsetY = $(_ACCell).offset().top - $(memoryTBL).offset().top;
+           await anime({
+                targets:memoryTBL,
+                translateX: offsetX ,
+                translateY: offsetY,
+                duration: 1500,
+                loop: 1,
+                direction: 'alternate',
+                easing: 'easeInOutCirc',
+                update:function(anim){
+                    if(Math.round(anim.progress)=== 100 && !addedOnceAlready){
+                        addedOnceAlready = true;
+                        _ACCell.value = padWithZeroes(parseInt(memoryTBL.value , 16) +  parseInt(_ACCell.value?_ACCell.value:0 , 16));
+                    }
+                }
+            }).finished;
+               break
+            default:
+              alert("Input error please check your input!");
+              location.reload();
+          } 
         }
-    }).finished;
-    
-    await anime({
-        targets:'#memory1',
-        translateX: $(cpu.instruction3).offset().left - $(memory.memory1).offset().left ,
-        translateY: $(cpu.instruction3).offset().top - $(memory.memory1).offset().top,
-        duration: 800,
-        easing: 'easeInOutQuad',
-        
-    }).finished;
+}
 
-
-    var s2x = $(cpu.instruction2).offset().left - $(memory2.memory5).offset().left;
-    var s2y = $(cpu.instruction2).offset().top - $(memory2.memory5).offset().top;
-   var step2 = await anime({
-        targets:'#memory5',
-        translateX:s2x ,
-        translateY: s2y,
-        duration: 1500,
-        easing: 'easeInOutQuad',
-        complete: function() {
-            cpu.instruction2.value = "0003";
-        }
-    }).finished;
-    await anime({
-        targets:'#memory5',
-        translateX: $(cpu.instruction2).offset().left - $(memory2.memory5).offset().left ,
-        translateY: $(cpu.instruction2).offset().top - $(memory2.memory5).offset().top,
-        duration: 800,
-        easing: 'easeInOutQuad',
-        
-    }).finished;
-
-
-
-    var s3x = $(cpu.instruction3).offset().left - $(memory.memory2).offset().left;
-    var s3y = $(cpu.instruction3).offset().top - $(memory.memory2).offset().top;
-   var step3 = await anime({
-        targets:'#memory2',
-        translateX:s3x ,
-        translateY: s3y,
-        duration: 1500,
-        easing: 'easeInOutQuad',
-        complete: function() {
-            cpu.instruction3.value = "5941";
-        }
-    }).finished;
-    await anime({
-        targets:'#memory2',
-        translateX: $(cpu.instruction3).offset().left - $(memory.memory2).offset().left ,
-        translateY: $(cpu.instruction3).offset().top - $(memory.memory2).offset().top,
-        duration: 800,
-        easing: 'easeInOutQuad',
-        
-    }).finished;
-
-
-    var s4x = $(cpu.instruction2).offset().left - $(memory2.memory6).offset().left;
-    var s4y = $(cpu.instruction2).offset().top - $(memory2.memory6).offset().top;
-   var step4 = await anime({
-        targets:'#memory6',
-        translateX:s4x ,
-        translateY: s4y,
-        duration: 1500,
-        easing: 'easeInOutQuad',
-        complete: function() {
-            cpu.instruction2.value = "0005";
-        }
-    }).finished;
-    await anime({
-        targets:'#memory6',
-        translateX: $(cpu.instruction2).offset().left - $(memory2.memory6).offset().left ,
-        translateY: $(cpu.instruction2).offset().top - $(memory2.memory6).offset().top,
-        duration: 800,
-        easing: 'easeInOutQuad',
-        
-    }).finished;
-
-
-    var s5x = $(cpu.instruction3).offset().left - $(memory.memory3).offset().left;
-    var s5y = $(cpu.instruction3).offset().top - $(memory.memory3).offset().top;
-   var step5 = await anime({
-        targets:'#memory3',
-        translateX:s5x ,
-        translateY: s5y,
-        duration: 1500,
-        easing: 'easeInOutQuad',
-        complete: function() {
-            cpu.instruction3.value = "2941";
-        }
-    }).finished;
-    await anime({
-        targets:'#memory3',
-        translateX: $(cpu.instruction3).offset().left - $(memory.memory3).offset().left ,
-        translateY: $(cpu.instruction3).offset().top - $(memory.memory3).offset().top,
-        duration: 800,
-        easing: 'easeInOutQuad',
-        
-    }).finished;
-
-
-    var s6x = $(cpu.instruction2).offset().left - $(memory2.memory6).offset().left;
-    var s6y = $(cpu.instruction2).offset().top - $(memory2.memory6).offset().top;
-   var step6 = await anime({
-        targets:'#instruction2',
-        translateX: -s6x ,
-        translateY: -s6y,
-        duration: 1500,
-        easing: 'easeInOutQuad',
-        complete: function() {
-            memory2.memory6.value = "0005";
-        }
-    }).finished;
-    await anime({
-        targets:'#instruction2',
-        translateX: $(cpu.instruction2).offset().left - $(memory2.memory6).offset().left ,
-        translateY: $(cpu.instruction2).offset().top - $(memory2.memory6).offset().top,
-        duration: 800,
-        easing: 'easeInOutQuad',
-        
-    }).finished;
-    
-};
 
