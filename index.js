@@ -60,7 +60,6 @@ async function simulate2(){
         console.log("ActiveMCellValue:",activeMCell.value);
         var offsetX = $(_IRCell).offset().left - $(activeMCell).offset().left;
         var offsetY = $(_IRCell).offset().top - $(activeMCell).offset().top;
-        _PCCell.value = activeMCellAddress.value;
         await anime({
             targets:activeMCell,
             translateX:offsetX ,
@@ -165,7 +164,8 @@ async function simulate2(){
             default:
               alert("Input error please check your input!");
               location.reload();
-          } 
+          }
+          _PCCell.value = parseInt(_PCCell.value) + 1; 
         }
 }
 
